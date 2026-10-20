@@ -1,13 +1,15 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-const API = (import.meta.env.VITE_API_URL || 'http://localhost:5000')
-  .replace(/\/$/, '');
+const API = (
+  import.meta.env.VITE_API_URL
+  || (import.meta.env.DEV ? 'http://localhost:5000' : '')
+).replace(/\/$/, '');
 
 async function api(path, options = {}) {
   const response = await fetch(`${API}${path}`, {
-    credentials: 'include',
     ...options,
+    credentials: 'include',
     headers: {
       ...(options.body ? { 'Content-Type': 'application/json' } : {}),
       ...options.headers,
