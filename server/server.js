@@ -17,7 +17,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === 'production';
 const clientOrigin = isProduction
-  ? 'https://team-task-manager-eyh0.onrender.com'
+  ? 'https://team-task-manager-ten-iota.vercel.app'
   : process.env.CLIENT_URL || 'http://localhost:5173';
 
 if (
