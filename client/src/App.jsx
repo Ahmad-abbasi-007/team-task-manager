@@ -81,9 +81,24 @@ function Field({ label, children }) {
   );
 }
 
-function dateInputValue(value) {
+function normalizeDateInput(value) {
   if (!value) return '';
-  const date = new Date(value);
+
+  const stringValue = String(value).trim();
+
+  if (!stringValue) return '';
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(stringValue)) {
+    return stringValue;
+  }
+
+  const match = stringValue.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+  if (match) {
+    return `${match[1]}-${match[2]}-${match[3]}`;
+  }
+
+  const date = new Date(stringValue);
 
   if (Number.isNaN(date.getTime())) return '';
 
@@ -94,12 +109,36 @@ function dateInputValue(value) {
   return `${year}-${month}-${day}`;
 }
 
+function dateInputValue(value) {
+  return normalizeDateInput(value);
+}
+
 function dateToISOString(value) {
   if (!value) return null;
 
-  const date = new Date(`${value}T23:59:00`);
+  const normalized = normalizeDateInput(value);
+
+  if (!normalized) return null;
+
+  const [year, month, day] = normalized.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
 
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function formatDueDate(value) {
+  const normalized = normalizeDateInput(value);
+
+  if (!normalized) return 'No due date';
+
+  const [year, month, day] = normalized.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+
+  return date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
 }
 
 function statusesForSelect() {
@@ -127,6 +166,7 @@ export default function App() {
 
   const [filter, setFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
+  const [taskSearch, setTaskSearch] = useState('');
 
   const [teamForm, setTeamForm] = useState({
     name: '',
@@ -649,6 +689,17 @@ export default function App() {
     (task) => task.status === 'todo'
   ).length;
 
+  const filteredTasks = tasks.filter((task) => {
+    const searchTerm = taskSearch.trim().toLowerCase();
+
+    if (!searchTerm) return true;
+
+    const title = (task.title || '').toLowerCase();
+    const description = (task.description || '').toLowerCase();
+
+    return title.includes(searchTerm) || description.includes(searchTerm);
+  });
+
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <header className="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/95 backdrop-blur">
@@ -1028,6 +1079,15 @@ export default function App() {
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2">
+                      <Field label="Search tasks">
+                        <input
+                          className={inputClass}
+                          value={taskSearch}
+                          onChange={(e) => setTaskSearch(e.target.value)}
+                          placeholder="Search titles or descriptions"
+                        />
+                      </Field>
+
                       <Field label="Filter by status">
                         <select
                           className={inputClass}
@@ -1057,7 +1117,7 @@ export default function App() {
                   </div>
 
                   <div className="mt-5 space-y-4">
-                    {tasks.map((task) => (
+                    {filteredTasks.map((task) => (
                       <article
                         key={task.id}
                         className="rounded-xl border border-slate-800 bg-slate-950 p-4 sm:p-5"
@@ -1228,9 +1288,7 @@ export default function App() {
                                 </span>
 
                                 {task.due_date && (
-                                  <span>
-                                    Due: {new Date(task.due_date).toLocaleDateString()}
-                                  </span>
+                                  <span>Due: {formatDueDate(task.due_date)}</span>
                                 )}
 
                                 {task.created_by_name && (
@@ -1285,11 +1343,13 @@ export default function App() {
                       </article>
                     ))}
 
-                    {tasks.length === 0 && (
+                    {filteredTasks.length === 0 && (
                       <div className="rounded-xl border border-dashed border-slate-700 px-5 py-12 text-center">
                         <p className="font-semibold">No tasks found</p>
                         <p className="mt-2 text-sm text-slate-400">
-                          Create a task or change the filters.
+                          {taskSearch.trim()
+                            ? 'No tasks match your search. Try a different keyword.'
+                            : 'Create a task or change the filters.'}
                         </p>
                       </div>
                     )}
