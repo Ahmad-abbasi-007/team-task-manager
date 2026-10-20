@@ -8,6 +8,8 @@ import connectPgSimple from 'connect-pg-simple';
 
 import { pool, testDatabaseConnection } from './db.js';
 import authRoutes from './routes/auth.js';
+import teamsRoutes from './routes/teams.js';
+import tasksRoutes from './routes/tasks.js';
 
 dotenv.config();
 
@@ -15,8 +17,10 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === 'production';
 
-if (!process.env.SESSION_SECRET ||
-    process.env.SESSION_SECRET === 'replace_this_with_a_long_random_secret') {
+if (
+  !process.env.SESSION_SECRET ||
+  process.env.SESSION_SECRET === 'replace_this_with_a_long_random_secret'
+) {
   throw new Error('Set a secure SESSION_SECRET in server/.env');
 }
 
@@ -48,7 +52,7 @@ app.use(session({
   cookie: {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'lax',
+    sameSite: isProduction ? 'none' : 'lax',
     maxAge: 1000 * 60 * 60 * 24,
   },
 }));
@@ -61,10 +65,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/health', (req, res) => {
-  res.json({
-    success: true,
-    status: 'healthy',
-  });
+  res.json({ success: true, status: 'healthy' });
 });
 
 app.get('/api/db-health', async (req, res) => {
@@ -77,7 +78,8 @@ app.get('/api/db-health', async (req, res) => {
       databaseTime: result.database_time,
     });
   } catch (error) {
-    console.error('Database health check failed:', error.code);
+    console.error('Database health check failed:', error.code, error.message);
+
     res.status(500).json({
       success: false,
       message: 'Database connection failed',
@@ -86,6 +88,8 @@ app.get('/api/db-health', async (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/teams', teamsRoutes);
+app.use('/api/tasks', tasksRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
@@ -95,11 +99,9 @@ app.use((req, res) => {
 });
 
 app.use((error, req, res, next) => {
-  console.error('Server error:', error.message);
+  console.error('Server error:', error.code || error.message);
 
-  if (res.headersSent) {
-    return next(error);
-  }
+  if (res.headersSent) return next(error);
 
   res.status(500).json({
     success: false,
@@ -107,6 +109,16 @@ app.use((error, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
+async function shutdown() {
+  server.close(async () => {
+    await pool.end().catch(() => {});
+    process.exit(0);
+  });
+}
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
