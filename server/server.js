@@ -16,6 +16,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === 'production';
+const clientOrigin = isProduction
+  ? 'https://team-task-manager-eyh0.onrender.com'
+  : process.env.CLIENT_URL || 'http://localhost:5173';
 
 if (
   !process.env.SESSION_SECRET ||
@@ -31,7 +34,7 @@ if (isProduction) {
 app.use(helmet());
 
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: clientOrigin,
   credentials: true,
 }));
 
