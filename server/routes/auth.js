@@ -198,10 +198,12 @@ router.post('/logout', (req, res, next) => {
   req.session.destroy((error) => {
     if (error) return next(error);
 
+    const isProduction = process.env.NODE_ENV === 'production';
+
     res.clearCookie('connect.sid', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
     });
 
     res.json({
