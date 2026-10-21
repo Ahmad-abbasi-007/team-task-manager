@@ -153,7 +153,7 @@ function statusesForSelect() {
 export default function App() {
   const [user, setUser] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
-  const [mode, setMode] = useState('login');
+  const [mode, setMode] = useState('landing');
 
   const [authForm, setAuthForm] = useState({
     name: '',
@@ -207,7 +207,7 @@ export default function App() {
     });
   }, []);
 
-  const loadTeamData = useCallback(
+  const fetchTeamData = useCallback(
     async (teamId, taskStatus = 'all', taskPriority = 'all') => {
       const params = new URLSearchParams({ teamId });
 
@@ -224,10 +224,23 @@ export default function App() {
         api(`/api/tasks?${params.toString()}`),
       ]);
 
+      return { memberData, taskData };
+    },
+    []
+  );
+
+  const loadTeamData = useCallback(
+    async (teamId, taskStatus = 'all', taskPriority = 'all') => {
+      const { memberData, taskData } = await fetchTeamData(
+        teamId,
+        taskStatus,
+        taskPriority
+      );
+
       setMembers(memberData.members);
       setTasks(taskData.tasks);
     },
-    []
+    [fetchTeamData]
   );
 
   useEffect(() => {
@@ -276,22 +289,25 @@ export default function App() {
   }, [user]);
 
   useEffect(() => {
-    if (!user || !team?.id) {
-      setMembers([]);
-      setTasks([]);
-      return undefined;
-    }
+    if (!user || !team?.id) return undefined;
 
     let active = true;
 
-    loadTeamData(team.id, filter, priorityFilter).catch((err) => {
-      if (active) reportError(err);
-    });
+    fetchTeamData(team.id, filter, priorityFilter)
+      .then(({ memberData, taskData }) => {
+        if (!active) return;
+
+        setMembers(memberData.members);
+        setTasks(taskData.tasks);
+      })
+      .catch((err) => {
+        if (active) reportError(err);
+      });
 
     return () => {
       active = false;
     };
-  }, [user, team?.id, filter, priorityFilter, loadTeamData]);
+  }, [user, team?.id, filter, priorityFilter, fetchTeamData]);
 
   async function handleAuth(event) {
     event.preventDefault();
@@ -561,10 +577,208 @@ export default function App() {
   }
 
   if (!user) {
+    if (mode === 'landing') {
+      return (
+        <main className="min-h-screen overflow-hidden bg-slate-950 text-white">
+          <header className="relative z-10 border-b border-slate-800/80">
+            <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
+              <a href="/" className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 font-black">
+                  T
+                </span>
+                <span className="font-bold tracking-tight">
+                  Team Task Manager
+                </span>
+              </a>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setMode('login')}
+                  className="px-3 py-2 text-sm font-semibold text-slate-300 transition hover:text-white"
+                >
+                  Log in
+                </button>
+                <Button
+                  type="button"
+                  onClick={() => setMode('register')}
+                  className="bg-indigo-600 text-white hover:bg-indigo-500"
+                >
+                  Get started
+                </Button>
+              </div>
+            </div>
+          </header>
+
+          <section className="relative">
+            <div className="pointer-events-none absolute inset-x-0 top-0 -z-0 mx-auto h-[34rem] max-w-5xl bg-indigo-600/15 blur-[120px]" />
+            <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[1fr_0.9fr] lg:px-8 lg:py-28">
+              <div>
+                <span className="inline-flex items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-400/10 px-3 py-1.5 text-xs font-semibold text-indigo-200">
+                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                  YOUR TEAM, IN SYNC
+                </span>
+
+                <h1 className="mt-6 max-w-2xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+                  Great teamwork starts with a
+                  <span className="text-indigo-400"> clear plan.</span>
+                </h1>
+
+                <p className="mt-6 max-w-xl text-base leading-7 text-slate-400 sm:text-lg">
+                  Bring your people, priorities, and tasks together in one
+                  simple workspace. Know what needs doing and who is doing it.
+                </p>
+
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  <Button
+                    type="button"
+                    onClick={() => setMode('register')}
+                    className="bg-indigo-600 px-6 py-3 text-white shadow-lg shadow-indigo-950/40 hover:bg-indigo-500"
+                  >
+                    Create your workspace
+                    <span className="ml-2" aria-hidden="true">→</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => setMode('login')}
+                    className="border border-slate-700 px-6 py-3 text-slate-200 hover:bg-slate-900"
+                  >
+                    I already have an account
+                  </Button>
+                </div>
+
+                <p className="mt-5 text-xs text-slate-500">
+                  Organize your team. Track progress. Get work done.
+                </p>
+              </div>
+
+              <div className="relative mx-auto w-full max-w-xl">
+                <div className="absolute -inset-4 rounded-[2rem] bg-indigo-500/10 blur-2xl" />
+                <div className="relative rounded-2xl border border-slate-700/80 bg-slate-900/90 p-4 shadow-2xl shadow-black/40 sm:p-6">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div>
+                      <p className="text-xs font-medium text-indigo-300">
+                        TEAM WORKSPACE
+                      </p>
+                      <h2 className="mt-1 text-lg font-bold">Product launch</h2>
+                    </div>
+                    <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">
+                      On track
+                    </span>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-3 gap-3">
+                    {[
+                      { label: 'To do', count: '08', color: 'text-sky-300' },
+                      { label: 'In progress', count: '04', color: 'text-amber-300' },
+                      { label: 'Completed', count: '12', color: 'text-emerald-300' },
+                    ].map((item) => (
+                      <div
+                        key={item.label}
+                        className="rounded-xl border border-slate-800 bg-slate-950/80 p-3 sm:p-4"
+                      >
+                        <p className="text-[10px] text-slate-500 sm:text-xs">
+                          {item.label}
+                        </p>
+                        <p className={`mt-2 text-xl font-bold sm:text-2xl ${item.color}`}>
+                          {item.count}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 space-y-3">
+                    {[
+                      { title: 'Finalize landing page', person: 'Alex Morgan', priority: 'High', color: 'text-rose-300 bg-rose-400/10', dot: 'bg-rose-400', progress: 'w-4/5' },
+                      { title: 'Review customer feedback', person: 'Sam Rivera', priority: 'Medium', color: 'text-amber-300 bg-amber-400/10', dot: 'bg-amber-400', progress: 'w-1/2' },
+                      { title: 'Prepare launch checklist', person: 'Jamie Lee', priority: 'Low', color: 'text-sky-300 bg-sky-400/10', dot: 'bg-sky-400', progress: 'w-1/4' },
+                    ].map((task) => (
+                      <div
+                        key={task.title}
+                        className="rounded-xl border border-slate-800 bg-slate-950/70 p-4"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <span className={`h-2 w-2 shrink-0 rounded-full ${task.dot}`} />
+                            <p className="truncate text-sm font-semibold text-slate-200">
+                              {task.title}
+                            </p>
+                          </div>
+                          <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${task.color}`}>
+                            {task.priority}
+                          </span>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between gap-3 pl-5">
+                          <span className="text-xs text-slate-500">
+                            Assigned to {task.person}
+                          </span>
+                          <span className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-800">
+                            <span className={`block h-full rounded-full bg-indigo-400 ${task.progress}`} />
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="border-t border-slate-800/80 bg-slate-900/30">
+            <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-3 sm:px-6 lg:px-8">
+              {[
+                {
+                  number: '01',
+                  title: 'Bring your team together',
+                  description: 'Create a shared space and invite your teammates to collaborate.',
+                },
+                {
+                  number: '02',
+                  title: 'Make ownership clear',
+                  description: 'Assign tasks, set priorities, and give every task a clear owner.',
+                },
+                {
+                  number: '03',
+                  title: 'See progress at a glance',
+                  description: 'Track work from to do, to in progress, to completed.',
+                },
+              ].map((feature) => (
+                <article key={feature.number} className="flex gap-4">
+                  <span className="text-sm font-bold text-indigo-400">
+                    {feature.number}
+                  </span>
+                  <div>
+                    <h2 className="font-semibold">{feature.title}</h2>
+                    <p className="mt-2 text-sm leading-6 text-slate-400">
+                      {feature.description}
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <footer className="border-t border-slate-800 px-4 py-6 text-center text-xs text-slate-500">
+            Team Task Manager · Plan together, get more done.
+          </footer>
+        </main>
+      );
+    }
+
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-white">
         <section className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-2xl">
           <div className="mb-8">
+            <button
+              type="button"
+              onClick={() => {
+                setMode('landing');
+                clearNotice();
+              }}
+              className="mb-6 text-sm font-medium text-slate-400 transition hover:text-white"
+            >
+              ← Back to home
+            </button>
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-xl font-black">
               T
             </div>
@@ -771,6 +985,8 @@ export default function App() {
                     type="button"
                     key={item.id}
                     onClick={() => {
+                      setMembers([]);
+                      setTasks([]);
                       setTeam(item);
                       setEditingTaskId(null);
                       clearNotice();
