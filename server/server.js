@@ -1,4 +1,3 @@
-
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -14,21 +13,20 @@ import tasksRoutes from './routes/tasks.js';
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === 'production';
+
+// YAHAN FIX KIYA HAI: Production mein CLIENT_URL use hoga, aur backup ke taur par Render URL
 const clientOrigin = isProduction
-  ? 'https://team-task-manager-ten-iota.vercel.app'
-  : process.env.CLIENT_URL || 'http://localhost:5173';
+  ? (process.env.CLIENT_URL || 'https://team-task-manager-eyh0.onrender.com')
+  : (process.env.CLIENT_URL || 'http://localhost:5173');
 
 if (
   !process.env.SESSION_SECRET ||
   process.env.SESSION_SECRET === 'replace_this_with_a_long_random_secret'
 ) {
   throw new Error('Set a secure SESSION_SECRET in server/.env');
-}
-
-if (isProduction) {
-  app.set('trust proxy', 1);
 }
 
 app.use(helmet());
