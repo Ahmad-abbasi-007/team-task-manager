@@ -58,7 +58,8 @@ app.use(session({
     secure: isProduction, 
     sameSite: isProduction ? 'none' : 'lax', 
     maxAge: 1000 * 60 * 60 * 24,
-    domain: isProduction ? '.onrender.com' : undefined, // YE LINE COOKIE FIX KAREGI
+    domain: isProduction ? '.onrender.com' : undefined, // Domain fix for cross-device
+    partitioned: isProduction, // Mobile/New devices fix
   },
 }));
 
