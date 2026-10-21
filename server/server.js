@@ -14,13 +14,13 @@ dotenv.config();
 
 const app = express();
 
-// 1. Render proxy ke liye zaroori
+// Render proxy ke liye zaroori
 app.set('trust proxy', 1);
 
 const PORT = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === 'production';
 
-// 2. CORS Origin set karna
+// CORS Origin set karna
 const clientOrigin = isProduction
   ? (process.env.CLIENT_URL || 'https://team-task-manager-eyh0.onrender.com')
   : (process.env.CLIENT_URL || 'http://localhost:5173');
@@ -55,9 +55,10 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    secure: isProduction, // Render par HTTPS hota hai
-    sameSite: isProduction ? 'none' : 'lax', // 3. Cross-domain cookie ke liye 'none' zaroori hai
+    secure: isProduction, 
+    sameSite: isProduction ? 'none' : 'lax', 
     maxAge: 1000 * 60 * 60 * 24,
+    domain: isProduction ? '.onrender.com' : undefined, // YE LINE COOKIE FIX KAREGI
   },
 }));
 
