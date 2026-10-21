@@ -20,9 +20,9 @@ app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === 'production';
 
-// CORS Origin set karna
+// 👇 Yahan tumhara asli Vercel URL set hai
 const clientOrigin = isProduction
-  ? (process.env.CLIENT_URL || 'https://team-task-manager-eyh0.onrender.com')
+  ? (process.env.CLIENT_URL || 'https://client-chi-gray-91.vercel.app')
   : (process.env.CLIENT_URL || 'http://localhost:5173');
 
 if (
@@ -58,8 +58,6 @@ app.use(session({
     secure: isProduction, 
     sameSite: isProduction ? 'none' : 'lax', 
     maxAge: 1000 * 60 * 60 * 24,
-    domain: isProduction ? '.onrender.com' : undefined, // Domain fix for cross-device
-    partitioned: isProduction, // Mobile/New devices fix
   },
 }));
 
